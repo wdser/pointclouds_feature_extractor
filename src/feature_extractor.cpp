@@ -2,16 +2,11 @@
 #include <thread>
 #include <cmath>
 
-#include "json/json.h"
-#include <pcl/point_cloud.h>
-#include <pcl/common/io.h>
-#include <pcl/point_types.h>
+#include <json/json.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/common/transforms.h>
 
 #include "./plane_extractor.h"
-
 
 int main(int argc, char **argv)
 {
@@ -35,10 +30,11 @@ int main(int argc, char **argv)
   viewer->setPointCloudRenderingProperties(
     pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "pcd_data");
   viewer->setPointCloudRenderingProperties(
-    pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "pcd_data");
+    pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "pcd_data");
 
   // build kd tree
-  PlaneExtractor plane_extractor(pcd_data);
+  PlaneExtractor plane_extractor(pcd_data,viewer);
+  plane_extractor.ExtractPlanes();
 
   while(!viewer->wasStopped())
   {
