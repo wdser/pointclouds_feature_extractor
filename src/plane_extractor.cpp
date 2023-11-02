@@ -10,15 +10,32 @@
 // }
 
 bool PlaneExtractor::IsNormalCorplannar(pcl::Normal normal_a, pcl::Normal normal_b) {
-  Eigen::Vector3f vector_a(normal_a.normal_x, normal_a.normal_y, normal_a.normal_z);
-  Eigen::Vector3f vector_b(normal_b.normal_x, normal_b.normal_y, normal_b.normal_z);
-  bool is_corplannar = std::abs(vector_a.norm() * vector_b.norm()) > 0.9 ? true :false;
-
-  // double cosValNew = vector_a.dot(vector_b) /(vector_a.norm()*vector_b.norm());
+  Eigen::Vector3f normal_vector_a = NormalToVector3f(normal_a);
+  Eigen::Vector3f normal_vector_b = NormalToVector3f(normal_b);
+  bool is_corplannar = std::abs(normal_vector_a.norm() * normal_vector_b.norm()) > 0.9 ? true :false;
+  // double cosValNew = normal_vector_a.dot(normal_vector_b) /(normal_vector_a.norm()*normal_vector_b.norm());
   // double angle = acos(cosValNew) * 180 / M_PI;
   // bool is_corplannar = std::abs(angle) <  ? true : false;
 
   return is_corplannar;
+}
+
+bool PlaneExtractor::IsAngleCorplannar(Plane plane_a, Plane plane_b) {
+  Eigen::Vector3f normal_vector_a = PlaneNormalToVector3f(plane_a);
+  Eigen::Vector3f normal_vector_b = PlaneNormalToVector3f(plane_b);
+  bool  is_angle_corplannar = std::abs(normal_vector_a.cross(normal_vector_b).norm())
+                            < 0.9 ? true: false;
+  return is_angle_corplannar;
+}
+
+bool PlaneExtractor::IsDistanceCorplannar(Plane plane_a, Plane plane_b) {
+  Eigen::Vector3f normal_vector_a = PlaneNormalToVector3f(plane_a);
+  Eigen::Vector3f normal_vector_b = PlaneNormalToVector3f(plane_b);
+  Eigen::Vector3f vector_ab = normal_vector_a - normal_vector_b;
+  bool  is_dis_corplannar = std::abs(vector_ab.cross(normal_vector_a).norm()) 
+                          + std::abs(vector_ab.cross(normal_vector_b).norm())
+                          < 0.9 ? true: false;
+  return is_dis_corplannar;
 }
 
 void PlaneExtractor::ExtractPlanes () {
