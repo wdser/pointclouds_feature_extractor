@@ -20,13 +20,13 @@ int main(int argc, char **argv)
     data_path = root["config_path"].asString();
   }
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr pcd_data(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointCloud<pcl::PointXYZI>::Ptr pcd_data(new pcl::PointCloud<pcl::PointXYZI>);
   pcl::io::loadPCDFile(data_path, *pcd_data);
   std::cout << "size: " << pcd_data->points.size() << std::endl;
 
   pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer("Viewer"));
   viewer->addCoordinateSystem(3);
-  viewer->addPointCloud(pcd_data, "pcd_data");
+  viewer->addPointCloud<pcl::PointXYZI>(pcd_data, "pcd_data");
   viewer->setPointCloudRenderingProperties(
     pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 0, "pcd_data");
   viewer->setPointCloudRenderingProperties(

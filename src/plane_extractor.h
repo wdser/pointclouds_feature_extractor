@@ -15,7 +15,7 @@ class Plane {
 
   Eigen::Vector3f center_;
   pcl::Normal plane_normal_;
-  std::vector<pcl::PointXYZ> plane_points_;
+  std::vector<pcl::PointXYZI> plane_points_;
 };
 
 class PlaneExtractor {
@@ -23,12 +23,12 @@ class PlaneExtractor {
   public:
 
   PlaneExtractor();
-  PlaneExtractor(const pcl::PointCloud<pcl::PointXYZ>::Ptr& pcd_data,
+  PlaneExtractor(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pcd_data,
                   const pcl::visualization::PCLVisualizer::Ptr viewer) 
                   : cloud_(pcd_data),viewer_(viewer) {}
   ~PlaneExtractor() = default;
 
-  inline void SetInputData(const pcl::PointCloud<pcl::PointXYZ>::Ptr& pcd_data) {
+  inline void SetInputData(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pcd_data) {
     cloud_ = pcd_data;
   }
   Eigen::Vector3f NormalToVector3f(pcl::Normal normal) {
@@ -45,13 +45,14 @@ class PlaneExtractor {
   }
 
   void ExtractPlanes();
-  // void BuildKdTree();
+  void RemoveNonPlanePoints(const std::vector<int>& plane_points_index,
+                                    pcl::PointCloud<pcl::PointXYZI>::Ptr* cloud);
   bool IsNormalCorplannar(pcl::Normal normal_a, pcl::Normal normal_b);
 
   bool IsAngleCorplannar(Plane plane_a, Plane plane_b);
   bool IsDistanceCorplannar(Plane plane_a, Plane plane_b);
   private:
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_;
-  pcl::KdTree<pcl::PointXYZ>::Ptr kdtree_;
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_;
+  pcl::KdTree<pcl::PointXYZI>::Ptr kdtree_;
   pcl::visualization::PCLVisualizer::Ptr viewer_;
 };
