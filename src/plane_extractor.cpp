@@ -1,7 +1,9 @@
 #include "./plane_extractor.h"
+
 #include <unordered_set>
-
-
+#include <Eigen/Dense>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/opencv.hpp>
 bool PlaneExtractor::IsNormalCorplannar(pcl::Normal search_normal, pcl::Normal searched_normal,
 pcl::PointXYZI search_point, pcl::PointXYZI searched_point) {
   Eigen::Vector3f normal_vector_a = NormalToVector3f(search_normal);
@@ -33,6 +35,45 @@ bool PlaneExtractor::IsDistanceCorplannar(Plane plane_a, Plane plane_b) {
                           + std::abs(vector_ab.dot(normal_vector_b))
                           < 0.2 ? true: false;
   return is_dis_corplannar;
+}
+
+
+bool PlaneExtractor::EstimatePlaneParameter(const std::vector<int>& plane_indexs,
+                              const pcl::PointCloud<pcl::PointXYZI>::Ptr point_cloud,
+                              Eigen::Vector4f* plane_coef) {
+  Eigen::Matrix3Xf points_3xf(3,plane_indexs.size());
+  for (int index = 0; index < plane_indexs.size(); index++) {
+    pcl::PointXYZI point = point_cloud->points[index];
+    points_3xf.col(index) = Eigen::Vector3f(point.x, point.y, point.z);
+  }
+  Eigen::Matrix3f singular_vectors;
+  Eigen::Vector3f singular_values;
+  SVD(points_3xf,&singular_vectors,&singular_values);
+  return std::fabs(singular_values(0)) >= 1e-10 &&
+          std::fabs(singular_values(2) / singular_values(0)) <
+              0.1 &&
+          std::fabs(singular_values(2)) <
+              std::fabs(singular_values(1)) - 1e-10;
+}
+
+void  PlaneExtractor::SVD(const Eigen::Matrix3Xf& points_3xf,Eigen::Matrix3f* singular_vectors, Eigen::Vector3f* singular_values) {
+  Eigen::Vector3f center_point = points_3xf.rowwise().mean();
+  Eigen::Matrix3Xf eigen_matrix = points_3xf.colwise() - center_point;
+  cv::Mat cv_matrix;
+  cv::eigen2cv(eigen_matrix, cv_matrix);
+  cv::SVD cv_svd(cv_matrix);
+  cv::cv2eigen(cv_svd.w, *singular_values);
+  cv::cv2eigen(cv_svd.u, *singular_vectors);
+  
+  if (center_point.dot(singular_vectors->rightCols<1>()) > 0) {
+    singular_vectors->col(0) = -singular_vectors->col(0);
+    singular_vectors->col(2) = -singular_vectors->col(2);
+  }
+  Eigen::Vector3f cross_vec =
+      singular_vectors->col(0).cross(singular_vectors->col(1));
+  if (cross_vec.dot(singular_vectors->col(2)) > 0) {
+    singular_vectors->col(1) = -singular_vectors->col(1);
+  }
 }
 
 void PlaneExtractor::ExtractPlanes () {
@@ -78,6 +119,11 @@ void PlaneExtractor::ExtractPlanes () {
     if (points_idx_queue.empty()) {
       if (curent_plane_points.size() > 10) {
         // found all points belong to currrent plane
+        Eigen::Vector4f plane_coef;
+        if (!EstimatePlaneParameter(curent_plane_points,cloud_,&plane_coef)) {
+          curent_plane_points.clear();
+          continue;
+        }
         for (int j = 0; j < curent_plane_points.size(); j++) {
           int point_idx = curent_plane_points[j];
           plane_points_index[point_idx] = plane_idx;

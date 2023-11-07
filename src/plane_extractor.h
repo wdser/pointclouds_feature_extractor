@@ -14,6 +14,7 @@ class Plane {
   private:
 
   Eigen::Vector3f center_;
+  Eigen::Vector4f plane_coef_;
   pcl::Normal plane_normal_;
   std::vector<pcl::PointXYZI> plane_points_;
 };
@@ -57,9 +58,14 @@ class PlaneExtractor {
                                     pcl::PointCloud<pcl::PointXYZI>::Ptr* cloud);
   bool IsNormalCorplannar(pcl::Normal normal_a, pcl::Normal normal_b,
   pcl::PointXYZI search_point, pcl::PointXYZI searched_point);
+  bool EstimatePlaneParameter(const std::vector<int>& plane_indexs,
+                              const pcl::PointCloud<pcl::PointXYZI>::Ptr point_cloud,
+                              Eigen::Vector4f* plane_coef);
 
   bool IsAngleCorplannar(Plane plane_a, Plane plane_b);
   bool IsDistanceCorplannar(Plane plane_a, Plane plane_b);
+  void SVD(const Eigen::Matrix3Xf& points_3xf,
+            Eigen::Matrix3f* singular_vectors, Eigen::Vector3f* singular_values);
   private:
   pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_;
   pcl::KdTree<pcl::PointXYZI>::Ptr kdtree_;
