@@ -1,10 +1,10 @@
-#include "./plane_extractor.h"
+#include "./feature_extractor.h"
 
 #include <unordered_set>
 #include <Eigen/Dense>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/opencv.hpp>
-bool PlaneExtractor::IsNormalCorplannar(pcl::Normal search_normal, pcl::Normal searched_normal,
+bool FeatureExtractor::IsNormalCorplannar(pcl::Normal search_normal, pcl::Normal searched_normal,
 pcl::PointXYZI search_point, pcl::PointXYZI searched_point) {
   Eigen::Vector3f normal_vector_a = NormalToVector3f(search_normal);
   Eigen::Vector3f normal_vector_b = NormalToVector3f(searched_normal);
@@ -19,17 +19,17 @@ pcl::PointXYZI search_point, pcl::PointXYZI searched_point) {
   return false;
 }
 
-bool PlaneExtractor::IsAngleCorplannar(Plane plane_a, Plane plane_b) {
-  Eigen::Vector3f normal_vector_a = PlaneNormalToVector3f(plane_a);
-  Eigen::Vector3f normal_vector_b = PlaneNormalToVector3f(plane_b);
+bool FeatureExtractor::IsAngleCorplannar(Feature feature_a, Feature feature_b) {
+  Eigen::Vector3f normal_vector_a = FeatureNormalToVector3f(feature_a);
+  Eigen::Vector3f normal_vector_b = FeatureNormalToVector3f(feature_b);
   bool  is_angle_corplannar = std::abs(normal_vector_a.cross(normal_vector_b).norm())
                             > 0.9 ? true: false;
   return is_angle_corplannar;
 }
 
-bool PlaneExtractor::IsDistanceCorplannar(Plane plane_a, Plane plane_b) {
-  Eigen::Vector3f normal_vector_a = PlaneNormalToVector3f(plane_a);
-  Eigen::Vector3f normal_vector_b = PlaneNormalToVector3f(plane_b);
+bool FeatureExtractor::IsDistanceCorplannar(Feature feature_a, Feature feature_b) {
+  Eigen::Vector3f normal_vector_a = FeatureNormalToVector3f(feature_a);
+  Eigen::Vector3f normal_vector_b = FeatureNormalToVector3f(feature_b);
   Eigen::Vector3f vector_ab = normal_vector_a - normal_vector_b;
   bool  is_dis_corplannar = std::abs(vector_ab.dot(normal_vector_a)) 
                           + std::abs(vector_ab.dot(normal_vector_b))
@@ -38,11 +38,11 @@ bool PlaneExtractor::IsDistanceCorplannar(Plane plane_a, Plane plane_b) {
 }
 
 
-bool PlaneExtractor::EstimatePlaneParameter(const std::vector<int>& plane_indexs,
+bool FeatureExtractor::EstimateFeatureParameter(const std::vector<int>& feature_indexs,
                               const pcl::PointCloud<pcl::PointXYZI>::Ptr point_cloud,
-                              Eigen::Vector4f* plane_coef) {
-  Eigen::Matrix3Xf points_3xf(3,plane_indexs.size());
-  for (int index = 0; index < plane_indexs.size(); index++) {
+                              Eigen::Vector4f* feature_coef) {
+  Eigen::Matrix3Xf points_3xf(3,feature_indexs.size());
+  for (int index = 0; index < feature_indexs.size(); index++) {
     pcl::PointXYZI point = point_cloud->points[index];
     points_3xf.col(index) = Eigen::Vector3f(point.x, point.y, point.z);
   }
@@ -56,7 +56,7 @@ bool PlaneExtractor::EstimatePlaneParameter(const std::vector<int>& plane_indexs
               std::fabs(singular_values(1)) - 1e-10;
 }
 
-void  PlaneExtractor::SVD(const Eigen::Matrix3Xf& points_3xf,Eigen::Matrix3f* singular_vectors, Eigen::Vector3f* singular_values) {
+void  FeatureExtractor::SVD(const Eigen::Matrix3Xf& points_3xf,Eigen::Matrix3f* singular_vectors, Eigen::Vector3f* singular_values) {
   Eigen::Vector3f center_point = points_3xf.rowwise().mean();
   Eigen::Matrix3Xf eigen_matrix = points_3xf.colwise() - center_point;
   cv::Mat cv_matrix;
@@ -76,7 +76,7 @@ void  PlaneExtractor::SVD(const Eigen::Matrix3Xf& points_3xf,Eigen::Matrix3f* si
   }
 }
 
-void PlaneExtractor::ExtractPlanes () {
+void FeatureExtractor::ExtractFeatures () {
 
   // kdtree_ = std::make_shared(new pcl::search::KdTree<pcl::PointXYZI>());
   // kdtree_->setInputCloud(cloud_);
@@ -109,31 +109,31 @@ void PlaneExtractor::ExtractPlanes () {
 
   int points_size = cloud_->points.size();
   std::queue<int> points_idx_queue;
-  std::vector<int> plane_points_index(points_size,0);
-  std::vector<int> curent_plane_points;
+  std::vector<int> feature_points_index(points_size,0);
+  std::vector<int> curent_feature_points;
   std::vector<bool> is_point_visited(points_size,false);
-  // plane_points_index.resize(points_size);
-  int plane_idx = 0;
+  // feature_points_index.resize(points_size);
+  int feature_idx = 0;
 
   for (int i = 0; i < points_size; ++i) {
     if (points_idx_queue.empty()) {
-      if (curent_plane_points.size() > 10) {
-        // found all points belong to currrent plane
-        Eigen::Vector4f plane_coef;
-        if (!EstimatePlaneParameter(curent_plane_points,cloud_,&plane_coef)) {
-          curent_plane_points.clear();
+      if (curent_feature_points.size() > 10) {
+        // found all points belong to currrent feature
+        Eigen::Vector4f feature_coef;
+        if (!EstimateFeatureParameter(curent_feature_points,cloud_,&feature_coef)) {
+          curent_feature_points.clear();
           continue;
         }
-        for (int j = 0; j < curent_plane_points.size(); j++) {
-          int point_idx = curent_plane_points[j];
-          plane_points_index[point_idx] = plane_idx;
+        for (int j = 0; j < curent_feature_points.size(); j++) {
+          int point_idx = curent_feature_points[j];
+          feature_points_index[point_idx] = feature_idx;
         }
-        std::cout << "plane: " << plane_idx << std::endl;
-        std::cout << "curent_plane_points: " 
-                  << curent_plane_points.size() << std::endl;
-        ++plane_idx;
+        std::cout << "feature: " << feature_idx << std::endl;
+        std::cout << "curent_feature_points: " 
+                  << curent_feature_points.size() << std::endl;
+        ++feature_idx;
       }
-      curent_plane_points.clear();
+      curent_feature_points.clear();
     }
 
     if (is_point_visited[i]) {
@@ -142,7 +142,7 @@ void PlaneExtractor::ExtractPlanes () {
 
     if (points_idx_queue.empty()) {
       points_idx_queue.push(i);
-      curent_plane_points.push_back(i);
+      curent_feature_points.push_back(i);
       is_point_visited[i] = true;
     }
 
@@ -177,7 +177,7 @@ void PlaneExtractor::ExtractPlanes () {
           pcl::Normal searched_normal = normals->points[searched_idx];
           pcl::PointXYZI searched_point = cloud_->points[searched_idx];
           if (IsNormalCorplannar(search_normal,searched_normal,search_point,searched_point)) {
-            curent_plane_points.push_back(searched_idx);
+            curent_feature_points.push_back(searched_idx);
             points_idx_queue.push(searched_idx);
             is_point_visited[searched_idx] = true;
           }
@@ -185,33 +185,33 @@ void PlaneExtractor::ExtractPlanes () {
       }
     }
   }
-  int color = plane_idx ? 255 / plane_idx : 50;
-  std::cout << "total planes: " << plane_idx << std::endl;
+  int color = feature_idx ? 255 / feature_idx : 50;
+  std::cout << "total features: " << feature_idx << std::endl;
 
   std::cout << " cloud_ size: " << cloud_->points.size() << std::endl;
-  RemoveNonPlanePoints(plane_points_index,&cloud_);
+  RemoveNonFeaturePoints(feature_points_index,&cloud_);
   std::cout << " cloud_ size: " << cloud_->points.size() << std::endl;
 
 
-  viewer_->addPointCloud<pcl::PointXYZI>(cloud_, "plane_points");
+  viewer_->addPointCloud<pcl::PointXYZI>(cloud_, "feature_points");
   viewer_->setPointCloudRenderingProperties(
-    pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 1, "plane_points");
+    pcl::visualization::PCL_VISUALIZER_COLOR, 0, 1, 1, "feature_points");
 
   // pcl::visualization::PointCloudColorHandlerGenericField<pcl::PointXYZI> single_color(cloud_, "intensity");
-  // viewer_->addPointCloud<pcl::PointXYZI>(cloud_, single_color, "plane_points");
+  // viewer_->addPointCloud<pcl::PointXYZI>(cloud_, single_color, "feature_points");
 
   viewer_->setPointCloudRenderingProperties(
-    pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "plane_points");
+    pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, "feature_points");
   // viewer.setPointCloudRenderingProperties(
   //   pcl::visualization::PCL_VISUALIZER_COLOR, 1, 10, 0, "normals");
 }
 
-void PlaneExtractor::RemoveNonPlanePoints(const std::vector<int>& plane_points_index,
+void FeatureExtractor::RemoveNonFeaturePoints(const std::vector<int>& feature_points_index,
                                     pcl::PointCloud<pcl::PointXYZI>::Ptr* cloud) {
   pcl::PointIndices idx;
-  for (int i = 0; i < plane_points_index.size(); ++i) {
-    (*cloud)->points[i].intensity = plane_points_index[i];
-    if (plane_points_index[i] > 0) {
+  for (int i = 0; i < feature_points_index.size(); ++i) {
+    (*cloud)->points[i].intensity = feature_points_index[i];
+    if (feature_points_index[i] > 0) {
       idx.indices.push_back(i);
     }
   }

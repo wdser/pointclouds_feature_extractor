@@ -20,7 +20,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP jsoncpp)
 include_directories(${JSONCPP_LIBRARIES})
 
-add_executable(feature_extractor src/feature_extractor.cpp src/plane_extractor.cpp )
+add_executable(feature_extractor src/feature_extractor.cpp src/feature_extractor.cpp )
 target_link_libraries(feature_extractor  ${VTK_LIBRARIES} 
 ${PCL_COMMON_LIBRARIES} ${PCL_IO_LIBRARIES} ${OpenCV_LIBS}
 ${PCL_VISUALIZATION_LIBRARIES} ${PCL_SEGMENTATION_LIBRARIES})

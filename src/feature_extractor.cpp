@@ -7,13 +7,13 @@
 #include <pcl/visualization/pcl_visualizer.h>
 // #include <pcl/gpu/octree/octree.hpp>
 
-#include "./plane_extractor.h"
+#include "./feature_extractor.h"
 int main(int argc, char **argv)
 {
   Json::Reader reader;
   Json::Value root;
   std::string data_path;
-  std::ifstream in("../config/plane_extractor_config.json", std::ios::binary);
+  std::ifstream in("../config/feature_extractor_config.json", std::ios::binary);
 
   if (reader.parse(in, root))
   {
@@ -33,8 +33,8 @@ int main(int argc, char **argv)
     pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "pcd_data");
 
   // build kd tree
-  PlaneExtractor plane_extractor(pcd_data,viewer);
-  plane_extractor.ExtractPlanes();
+  FeatureExtractor feature_extractor(pcd_data,viewer);
+  feature_extractor.ExtractFeatures();
 
   while(!viewer->wasStopped())
   {

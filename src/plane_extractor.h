@@ -5,29 +5,29 @@
 #include <pcl/visualization/pcl_visualizer.h>
 
 
-class Plane {
+class Feature {
 
   public:
   Eigen::Vector3f& GetCenter() { return center_; }
-  pcl::Normal& GetNormal() { return plane_normal_; }
+  pcl::Normal& GetNormal() { return feature_normal_; }
 
   private:
 
   Eigen::Vector3f center_;
-  Eigen::Vector4f plane_coef_;
-  pcl::Normal plane_normal_;
-  std::vector<pcl::PointXYZI> plane_points_;
+  Eigen::Vector4f feature_coef_;
+  pcl::Normal feature_normal_;
+  std::vector<pcl::PointXYZI> feature_points_;
 };
 
-class PlaneExtractor {
+class FeatureExtractor {
 
   public:
 
-  PlaneExtractor();
-  PlaneExtractor(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pcd_data,
+  FeatureExtractor();
+  FeatureExtractor(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pcd_data,
                   const pcl::visualization::PCLVisualizer::Ptr viewer) 
                   : cloud_(pcd_data),viewer_(viewer) {}
-  ~PlaneExtractor() = default;
+  ~FeatureExtractor() = default;
 
   inline void SetInputData(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pcd_data) {
     cloud_ = pcd_data;
@@ -46,24 +46,24 @@ class PlaneExtractor {
                                   normal.normal_z);
     return normal_vector;
   }
-  Eigen::Vector3f PlaneNormalToVector3f(Plane plane) {
-    Eigen::Vector3f normal_vector(plane.GetNormal().normal_x,
-                                    plane.GetNormal().normal_y,
-                                    plane.GetNormal().normal_z);
+  Eigen::Vector3f FeatureNormalToVector3f(Feature feature) {
+    Eigen::Vector3f normal_vector(feature.GetNormal().normal_x,
+                                    feature.GetNormal().normal_y,
+                                    feature.GetNormal().normal_z);
     return normal_vector;
   }
 
-  void ExtractPlanes();
-  void RemoveNonPlanePoints(const std::vector<int>& plane_points_index,
+  void ExtractFeatures();
+  void RemoveNonFeaturePoints(const std::vector<int>& feature_points_index,
                                     pcl::PointCloud<pcl::PointXYZI>::Ptr* cloud);
   bool IsNormalCorplannar(pcl::Normal normal_a, pcl::Normal normal_b,
   pcl::PointXYZI search_point, pcl::PointXYZI searched_point);
-  bool EstimatePlaneParameter(const std::vector<int>& plane_indexs,
+  bool EstimateFeatureParameter(const std::vector<int>& feature_indexs,
                               const pcl::PointCloud<pcl::PointXYZI>::Ptr point_cloud,
-                              Eigen::Vector4f* plane_coef);
+                              Eigen::Vector4f* feature_coef);
 
-  bool IsAngleCorplannar(Plane plane_a, Plane plane_b);
-  bool IsDistanceCorplannar(Plane plane_a, Plane plane_b);
+  bool IsAngleCorplannar(Feature feature_a, Feature feature_b);
+  bool IsDistanceCorplannar(Feature feature_a, Feature feature_b);
   void SVD(const Eigen::Matrix3Xf& points_3xf,
             Eigen::Matrix3f* singular_vectors, Eigen::Vector3f* singular_values);
   private:
