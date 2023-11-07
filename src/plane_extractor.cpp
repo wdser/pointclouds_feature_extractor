@@ -2,21 +2,19 @@
 #include <unordered_set>
 
 
-bool PlaneExtractor::IsNormalCorplannar(pcl::Normal normal_a, pcl::Normal normal_b) {
-  Eigen::Vector3f normal_vector_a = NormalToVector3f(normal_a);
-  Eigen::Vector3f normal_vector_b = NormalToVector3f(normal_b);
-
-  bool  is_corplannar = std::abs(normal_vector_a.cross(normal_vector_b).norm())
-                            > 0.95 ? true: false;
-  return is_corplannar;
-
-  // bool is_corplannar = std::abs(normal_vector_a.norm() * normal_vector_b.norm()) > 0.9 ? true :false;
-
-  // double cosValNew = normal_vector_a.dot(normal_vector_b) /(normal_vector_a.norm()*normal_vector_b.norm());
-  // double angle = acos(cosValNew) * 180 / M_PI;
-  // bool is_corplannar = std::abs(angle) < 1 ? true : false;
-
-  // return is_corplannar;
+bool PlaneExtractor::IsNormalCorplannar(pcl::Normal search_normal, pcl::Normal searched_normal,
+pcl::PointXYZI search_point, pcl::PointXYZI searched_point) {
+  Eigen::Vector3f normal_vector_a = NormalToVector3f(search_normal);
+  Eigen::Vector3f normal_vector_b = NormalToVector3f(searched_normal);
+  Eigen::Vector3f search_vec_point = PclToVector3f(search_point);
+  Eigen::Vector3f searched_vec_point = PclToVector3f(searched_point);
+  const double a_norm = normal_vector_a.norm();
+  const double b_norm = normal_vector_b.norm();
+  if (normal_vector_a.dot(normal_vector_b) /a_norm * b_norm > 0.9 
+      && std::abs(normal_vector_a.dot(search_vec_point) - normal_vector_a.dot(searched_vec_point)) < 0.1) {
+    return true;
+  }
+  return false;
 }
 
 bool PlaneExtractor::IsAngleCorplannar(Plane plane_a, Plane plane_b) {
@@ -106,19 +104,33 @@ void PlaneExtractor::ExtractPlanes () {
       int search_idx = points_idx_queue.front();
       points_idx_queue.pop();
       pcl::PointXYZI search_point = cloud_->points[search_idx];
-      int K = 50;
-      std::vector<int> pointIdxNKNSearch(K);
-      std::vector<float> pointNKNSquaredDistance(K);
-      if(tree->nearestKSearch(search_point, K, 
-          pointIdxNKNSearch, pointNKNSquaredDistance) > 0) {
-        for (size_t idx = 0; idx < K; ++idx) {
-          int searched_idx = pointIdxNKNSearch[idx];
+
+      // int K = 50;
+      // std::vector<int> pointIdxNKNSearch(K);
+      // std::vector<float> pointNKNSquaredDistance(K);
+      // if(tree->nearestKSearch(search_point, K, 
+      //     pointIdxNKNSearch, pointNKNSquaredDistance) > 0) {
+      //   for (size_t idx = 0; idx < K; ++idx) {
+      //     int searched_idx = pointIdxNKNSearch[idx];
+      //     if (is_point_visited[searched_idx]) {
+      //       continue;
+      //     }
+
+      const double radius = 0.5;
+      pcl::	Indices k_indices;
+      std::vector<float> k_sqr_distances;
+      if(tree->radiusSearch(search_point, radius, 
+          k_indices, k_sqr_distances) > 0) {
+        for (size_t idx = 0; idx < k_indices.size(); ++idx) {
+          int searched_idx = k_indices[idx];
           if (is_point_visited[searched_idx]) {
             continue;
           }
+
           pcl::Normal search_normal = normals->points[search_idx];
           pcl::Normal searched_normal = normals->points[searched_idx];
-          if (IsNormalCorplannar(search_normal,searched_normal)) {
+          pcl::PointXYZI searched_point = cloud_->points[searched_idx];
+          if (IsNormalCorplannar(search_normal,searched_normal,search_point,searched_point)) {
             curent_plane_points.push_back(searched_idx);
             points_idx_queue.push(searched_idx);
             is_point_visited[searched_idx] = true;

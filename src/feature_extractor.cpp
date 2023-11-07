@@ -5,9 +5,9 @@
 #include <json/json.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/pcl_visualizer.h>
+// #include <pcl/gpu/octree/octree.hpp>
 
 #include "./plane_extractor.h"
-
 int main(int argc, char **argv)
 {
   Json::Reader reader;

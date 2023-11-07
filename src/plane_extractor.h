@@ -31,6 +31,14 @@ class PlaneExtractor {
   inline void SetInputData(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pcd_data) {
     cloud_ = pcd_data;
   }
+
+  Eigen::Vector3f PclToVector3f(pcl::PointXYZI point) {
+    Eigen::Vector3f vec_point(point.x,
+                                  point.y,
+                                  point.z);
+    return vec_point;
+  }
+
   Eigen::Vector3f NormalToVector3f(pcl::Normal normal) {
     Eigen::Vector3f normal_vector(normal.normal_x,
                                   normal.normal_y,
@@ -47,7 +55,8 @@ class PlaneExtractor {
   void ExtractPlanes();
   void RemoveNonPlanePoints(const std::vector<int>& plane_points_index,
                                     pcl::PointCloud<pcl::PointXYZI>::Ptr* cloud);
-  bool IsNormalCorplannar(pcl::Normal normal_a, pcl::Normal normal_b);
+  bool IsNormalCorplannar(pcl::Normal normal_a, pcl::Normal normal_b,
+  pcl::PointXYZI search_point, pcl::PointXYZI searched_point);
 
   bool IsAngleCorplannar(Plane plane_a, Plane plane_b);
   bool IsDistanceCorplannar(Plane plane_a, Plane plane_b);

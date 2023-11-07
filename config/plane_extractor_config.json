@@ -1,7 +1,8 @@
 
 {
-    "config_path" : "../data/forange.pcd"
+    // "config_path" : "../data/forange.pcd"
     // "config_path" : "../data/H_LiDAR_Map.pcd"
     // "config_path" : "../data/livox.pcd"
     // "config_path" : "../data/pointcloud.pcd"
+    "config_path" : "../data/blue.pcd"
 }
