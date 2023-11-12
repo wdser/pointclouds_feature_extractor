@@ -4,10 +4,10 @@
     // "config_path" : "../data/H_LiDAR_Map.pcd"
     // "config_path" : "../data/livox.pcd"
     // "config_path" : "../data/pointcloud.pcd"
-    "config_path" : "../data/blue.pcd",
+    // "config_path" : "../data/blue.pcd",
     // "config_path" : "../data/rs/top/top_40.pcd",
     // "config_path" : "../data/rs/right/right_40.pcd",
-    // "config_path" : "../data/rs/left/left_40.pcd",
+    "config_path" : "../data/rs/left/left_40.pcd",
 
     // "config_path" : "../data/static/top/top_0.pcd",
     // "config_path" : "../data/static/left/left_0.pcd",

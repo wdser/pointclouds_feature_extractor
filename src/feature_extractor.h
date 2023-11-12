@@ -32,6 +32,7 @@ class FeatureExtractor {
                   : cloud_(pcd_data),viewer_(viewer) {}
   ~FeatureExtractor() = default;
 
+  void ShowBoundingBox(const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud);
   void SetKAndRadius(const int k_normal, const int k_feature, const double radius) {
     k_normal_ = k_normal;
     k_feature_ = k_feature;
@@ -58,6 +59,14 @@ class FeatureExtractor {
                                   normal.normal_z);
     return normal_vector;
   }
+
+  pcl::Normal Vector3fToNormal(Eigen::Vector3f normal_vector) {
+    pcl::Normal normal(normal_vector.x(),
+                      normal_vector.y(),
+                      normal_vector.z());
+    return normal;
+  }
+
   Eigen::Vector3f FeatureNormalToVector3f(Feature feature) {
     Eigen::Vector3f normal_vector(feature.GetNormal().normal_x,
                                     feature.GetNormal().normal_y,
@@ -70,6 +79,11 @@ class FeatureExtractor {
                                     pcl::PointCloud<pcl::PointXYZI>::Ptr* cloud);
   bool IsNormalCorplannar(pcl::Normal normal_a, pcl::Normal normal_b,
   pcl::PointXYZI search_point, pcl::PointXYZI searched_point);
+
+  bool IsAverageNormalCorplannar(pcl::Normal normal_a, pcl::Normal normal_b,
+  pcl::PointXYZI search_point, pcl::PointXYZI searched_point);
+
+
   bool EstimateFeatureParameter(const std::vector<int>& feature_indexs,
                               const pcl::PointCloud<pcl::PointXYZI>::Ptr point_cloud,
                               Eigen::Vector4f* feature_coef);
