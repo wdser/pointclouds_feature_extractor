@@ -63,6 +63,7 @@
         "variant": "cpp",
         "bit": "cpp",
         "unordered_set": "cpp",
-        "core": "cpp"
+        "core": "cpp",
+        "*.ipp": "cpp"
     }
 }
