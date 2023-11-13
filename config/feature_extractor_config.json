@@ -7,12 +7,13 @@
     // "config_path" : "../data/blue.pcd",
     // "config_path" : "../data/rs/top/top_40.pcd",
     // "config_path" : "../data/rs/right/right_40.pcd",
-    "config_path" : "../data/rs/left/left_40.pcd",
+    // "config_path" : "../data/rs/left/left_40.pcd",
 
     // "config_path" : "../data/static/top/top_0.pcd",
-    // "config_path" : "../data/static/left/left_0.pcd",
+    "config_path" : "../data/static/left/left_0.pcd",
     // "config_path" : "../data/static/right/right_0.pcd",
 
+    "voxel_size": 0.01,
     "k_normal": 20,
     "k_feature": 30,
     "radius": 0.5,

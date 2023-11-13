@@ -17,6 +17,7 @@ int main(int argc, char **argv)
   double radius;
   int k_normal, k_feature;
   bool is_radius = true;
+  float voxel_size;
   if (reader.parse(in, root))
   {
     data_path = root["config_path"].asString();
@@ -24,6 +25,7 @@ int main(int argc, char **argv)
     k_normal = root["k_normal"].asInt();
     k_feature = root["k_feature"].asInt();
     is_radius = root["is_radius"].asBool();
+    voxel_size = root["voxel_size"].asFloat();
   }
 
   pcl::PointCloud<pcl::PointXYZI>::Ptr pcd_data(new pcl::PointCloud<pcl::PointXYZI>);
@@ -41,6 +43,7 @@ int main(int argc, char **argv)
   FeatureExtractor feature_extractor(pcd_data,viewer);
   feature_extractor.SetKAndRadius(k_normal,k_feature,radius);
   feature_extractor.SetIsRadius(is_radius);
+  feature_extractor.SetVoxelSize(voxel_size);
   feature_extractor.ExtractFeatures();
 
   while(!viewer->wasStopped())

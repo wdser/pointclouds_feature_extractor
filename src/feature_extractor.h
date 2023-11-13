@@ -41,6 +41,10 @@ class FeatureExtractor {
   void SetIsRadius(const bool is_radius) {
     is_radius_ = is_radius;
   }
+
+  void SetVoxelSize(const float voxel_size) {
+    voxel_size_ = voxel_size;
+  }
   
   inline void SetInputData(const pcl::PointCloud<pcl::PointXYZI>::Ptr& pcd_data) {
     cloud_ = pcd_data;
@@ -101,4 +105,5 @@ class FeatureExtractor {
   int k_feature_{0};
   double radius_{0.0};
   bool is_radius_{true};
+  float voxel_size_{0.1};
 };

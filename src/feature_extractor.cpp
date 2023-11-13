@@ -34,9 +34,9 @@ pcl::PointXYZI search_point, pcl::PointXYZI searched_point) {
   Eigen::Vector3f searched_vec_point = PclToVector3f(searched_point);
   const double a_norm = normal_vector_a.norm();
   const double b_norm = normal_vector_b.norm();
-  if (a_norm > 1e-10 && b_norm > 1e-10 && std::abs(normal_vector_a.dot(normal_vector_b) /a_norm * b_norm) > 0.6
-      && std::abs(normal_vector_b.dot(search_vec_point) - normal_vector_b.dot(searched_vec_point)) < 0.5
-      && std::abs(normal_vector_a.dot(search_vec_point) - normal_vector_a.dot(searched_vec_point)) < 0.5
+  if (a_norm > 1e-10 && b_norm > 1e-10 && std::abs(normal_vector_a.dot(normal_vector_b) /a_norm * b_norm) > 0.9
+      && std::abs(normal_vector_b.dot(search_vec_point) - normal_vector_b.dot(searched_vec_point)) < 0.2
+      && std::abs(normal_vector_a.dot(search_vec_point) - normal_vector_a.dot(searched_vec_point)) < 0.2
       ) {
     return true;
   }
@@ -119,20 +119,16 @@ void FeatureExtractor::ShowBoundingBox(const pcl::PointCloud<pcl::PointXYZ>::Ptr
 
 void FeatureExtractor::ExtractFeatures () {
 
-  // kdtree_ = std::make_shared(new pcl::search::KdTree<pcl::PointXYZI>());
-  // kdtree_->setInputCloud(cloud_);
-
-
     pcl::PCLPointCloud2::Ptr cloud_2(new pcl::PCLPointCloud2);
     pcl::toPCLPointCloud2(*cloud_, *cloud_2);
-
-    float leftSize = 0.01f;
     pcl::VoxelGrid<pcl::PCLPointCloud2> down_size_filter;
     down_size_filter.setInputCloud(cloud_2);
-    down_size_filter.setLeafSize(leftSize, leftSize, leftSize);
+  std::cout << "voxel_size: " << voxel_size_ << std::endl;
+    down_size_filter.setLeafSize(voxel_size_, voxel_size_, voxel_size_);
+  std::cout << "cloud size: " << cloud_->points.size() << std::endl;
     down_size_filter.filter(*cloud_2);
-    
     pcl::fromPCLPointCloud2(*cloud_2, *cloud_);
+  std::cout << "cloud size: " << cloud_->points.size() << std::endl;
 
   pcl::search::KdTree<pcl::PointXYZI>::Ptr tree (
       new pcl::search::KdTree<pcl::PointXYZI> ());
@@ -142,8 +138,8 @@ void FeatureExtractor::ExtractFeatures () {
 
   normal_estimate.setInputCloud(cloud_);
   normal_estimate.setSearchMethod(tree);
-  // normal_estimate.setKSearch(k_normal_);
-  normal_estimate.setRadiusSearch(0.25);
+  normal_estimate.setKSearch(k_normal_);
+  // normal_estimate.setRadiusSearch(0.25);
   
   std::cout << "normals size: " << normals->points.size() << std::endl;
   normal_estimate.compute(*normals);
@@ -168,7 +164,6 @@ void FeatureExtractor::ExtractFeatures () {
   // feature_points_index.resize(points_size);
   int feature_idx = 0;
   int non_feature_idx = 0;
-  pcl::Normal average_normal(0,0,0);
 
   for (int i = 0; i < points_size; ++i) {
     if (points_idx_queue.empty()) {
@@ -190,9 +185,6 @@ void FeatureExtractor::ExtractFeatures () {
         ++feature_idx;
       }
       curent_feature_points.clear();
-      average_normal.normal_x = 0;
-      average_normal.normal_y = 0;
-      average_normal.normal_z = 0;
     }
 
     if (is_point_visited[i]) {
@@ -210,13 +202,21 @@ void FeatureExtractor::ExtractFeatures () {
       points_idx_queue.pop();
       pcl::PointXYZI search_point = cloud_->points[search_idx];
 
-      if (is_radius_) {
-        std::vector<int> pointIdxNKNSearch(k_feature_);
-        std::vector<float> pointNKNSquaredDistance(k_feature_);
-        if(tree->nearestKSearch(search_point, k_feature_, 
-            pointIdxNKNSearch, pointNKNSquaredDistance) > 0) {
-          for (size_t idx = 0; idx < k_feature_; ++idx) {
-            int searched_idx = pointIdxNKNSearch[idx];
+      if (is_radius_){
+        pcl::	Indices k_indices;
+        std::vector<float> k_sqr_distances;
+        if(tree->radiusSearch(search_point, radius_, 
+            k_indices, k_sqr_distances) > 0) {
+          pcl::Normal average_normal(0,0,0);
+          Eigen::Vector3f average_normal_vector(0,0,0);
+          for (size_t idx = 0; idx < k_indices.size(); ++idx) {
+            int searched_idx = k_indices[idx];
+            pcl::Normal searched_normal = normals->points[searched_idx];
+            average_normal_vector = NormalToVector3f(searched_normal) + average_normal_vector;
+          }
+            average_normal = Vector3fToNormal(average_normal_vector);
+          for (size_t idx = 0; idx < k_indices.size(); ++idx) {
+            int searched_idx = k_indices[idx];
             if (is_point_visited[searched_idx]) {
               continue;
             }
@@ -234,21 +234,26 @@ void FeatureExtractor::ExtractFeatures () {
           }
         }
       } else {
-        pcl::	Indices k_indices;
-        std::vector<float> k_sqr_distances;
-        if(tree->radiusSearch(search_point, radius_, 
-            k_indices, k_sqr_distances) > 0) {
-          for (size_t idx = 0; idx < k_indices.size(); ++idx) {
-            int searched_idx = k_indices[idx];
+        std::vector<int> pointIdxNKNSearch(k_feature_);
+        std::vector<float> pointNKNSquaredDistance(k_feature_);
+        if(tree->nearestKSearch(search_point, k_feature_, 
+            pointIdxNKNSearch, pointNKNSquaredDistance) > 0) {
+          pcl::Normal average_normal(0,0,0);
+          Eigen::Vector3f average_normal_vector(0,0,0);
+          for (size_t idx = 0; idx < k_feature_; ++idx) {
+            int searched_idx = pointIdxNKNSearch[idx];
+            pcl::Normal searched_normal = normals->points[searched_idx];
+            average_normal_vector = NormalToVector3f(searched_normal) + average_normal_vector;
+          }
+            average_normal = Vector3fToNormal(average_normal_vector);
+          for (size_t idx = 0; idx < k_feature_; ++idx) {
+            int searched_idx = pointIdxNKNSearch[idx];
             if (is_point_visited[searched_idx]) {
               continue;
             }
-
             pcl::Normal search_normal = normals->points[search_idx];
             pcl::Normal searched_normal = normals->points[searched_idx];
             pcl::PointXYZI searched_point = cloud_->points[searched_idx];
-            Eigen::Vector3f normal_vector = NormalToVector3f(search_normal) + NormalToVector3f(average_normal);
-            average_normal = Vector3fToNormal(normal_vector);
             if (IsNormalCorplannar(search_normal,searched_normal,search_point,searched_point)
               && IsAverageNormalCorplannar(average_normal,searched_normal,search_point,searched_point)) {
               curent_feature_points.push_back(searched_idx);
@@ -257,7 +262,7 @@ void FeatureExtractor::ExtractFeatures () {
             }
           }
         }
-      }
+      } 
     }
   }
   int color = feature_idx ? 255 / feature_idx : 50;
